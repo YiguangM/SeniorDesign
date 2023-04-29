@@ -936,6 +936,7 @@ class HUD(object):
         evaluations.speedTest(world.player,self)
         evaluations.parkTest(world.player, self.count, self)
         evaluations.collisions( world.collision_sensor,collision)
+        evaluations.instructortest(world.player, self)
 
 
         self.last_time = int(self.simulation_time)
@@ -1196,6 +1197,15 @@ class Evaluations(object):
                 print('invade lane NB')
                 self.no_blinker__fail = True
                 return False
+            
+
+    def instructortest(self, car, hud):
+        v = car.get_velocity()
+        speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
+        t = car.get_transform()
+        if (t.location.x >184 and t.location.x <191) and (t.location.y >40 and t.location.y <72):
+            self.instructor_fail = True #flags if the the driver goes beyond the designated parking instruction
+            #print("instruction violated")
 
 
 evaluations = Evaluations()
@@ -1920,7 +1930,7 @@ def game_loop(args):
 
     try:
         client = carla.Client(args.host, args.port)
-        client.set_timeout(100000.0)
+        client.set_timeout(20000.0)
         client.load_world('Town05')
 
 
@@ -2109,8 +2119,8 @@ def main():
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
-        default='1280x720',
-        help='window resolution (default: 1280x720)')
+        default='4500x1080',
+        help='window resolution (default: 4500x1080)')
     argparser.add_argument(
         '--filter',
         metavar='PATTERN',
