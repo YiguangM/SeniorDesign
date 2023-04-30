@@ -125,6 +125,16 @@ rowsHeader = ['x','y','accelaration x','accelaration y','accelaration z','speed'
 writer = csv.writer(dataFile) 
 writer.writerow(rowsHeader)#write headers in the first row
 
+
+################################################################# Flags to check for fail###################################33333
+#################################################################################################################################
+
+global fail_no_blinker  #### condition for checking if blinker were used for crossing the lane
+
+global fail_instructor  ### condition for checking if the commnads were followed
+
+global fail_solid_line_Crossed ### condition for checking if the solid line was crossed
+
 def get_actor_display_name(actor, truncate=250):
     name = ' '.join(actor.type_id.replace('_', '.').title().split('.')[1:])
     return (name[:truncate - 1] + u'\u2026') if len(name) > truncate else name
@@ -777,8 +787,18 @@ class HUD(object):
         self.last_sec = int(self.simulation_time)
 
 ########################################################################################################################################################################
+
+
 ########################################################################################################################################################################
+#                                                      Checking whehter the test for listening to instructor 
 ########################################################################################################################################################################
+
+        # def instruction_test():
+        #     sensor_check =  self.sensor.listen(lambda event: LaneInvasionSensor._on_invasion(self, event,self.player))
+        #     if sensor_check != True:
+        #         print("REached here")
+        #         return False
+        #     else: return True
 
 ###################################################### CONDITION FOR STOPPING IN PARKING################################################################################
 
@@ -797,6 +817,52 @@ class HUD(object):
 ########################################################################################################################################################################
 ########################################################################################################################################################################
 
+###################################################### CONDITION FOR STOPPING IN PARKING################################################################################
+
+        def parking_pos(x1,x2,y1,y2,player_pos_x,player_pos_y,speed): 
+            if((player_pos_x >x1 and player_pos_x <x2) and(player_pos_y >y1 and player_pos_y <y2) and speed ==0):
+                print("i am here")
+                time.sleep(2)
+                print('closing window')
+                pygame.quit()
+
+ 
+ ########################################### FOR TOWN 5 ################################################
+       
+        parking_pos(5,15,-36,-29,t.location.x,t.location.y,speed) #  def parking_pos(self,x1,y1,x2,y2,player_pos_x,player_pos_y,speed): 
+         
+########################################### FOR TOWN 3 ################################################
+
+        parking_pos(9,15,-120,85,t.location.x,t.location.y,speed) #  def parking_pos(self,x1,y1,x2,y2,player_pos_x,player_pos_y,speed): 
+
+################################################################################################
+
+
+
+
+#################################################### Change Lane check function    ###########################################################
+        def change_lane_check(pos_x,pos_y):
+            distance_y = 90
+            if abs(pos_y)-distance_y <=6: #check if its less than 6 distance
+                mixer.init()    
+                mixer.music.load(r"C:\Users\usama\OneDrive\Desktop\Audio_Files\lane_change.mp3")  # Loading the song    
+                mixer.music.set_volume(0.7)  # Setting the volume     
+                mixer.music.play() # Start playing the song
+                print("hello, change lane")
+
+
+        
+ ################################################### Checking for lane change condition, for town 3 #####################################################
+
+        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75)):
+            change_lane_check(t.location.x,t.location.y)
+            # if instruction_test() == False:
+            #     fail_instructor = True
+
+
+
+########################################################################################################################################################################
+########################################################################################################################################################################
 
         self._info_text = [
             'Server:  % 16.0f FPS' % self.server_fps,
