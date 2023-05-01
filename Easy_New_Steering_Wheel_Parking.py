@@ -61,7 +61,6 @@ from __future__ import print_function
 # -- find carla module ---------------------------------------------------------
 # ==============================================================================
 
-
 import glob
 import os
 from sre_parse import FLAGS
@@ -99,6 +98,12 @@ import weakref
 import csv
 import re
 import random
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+import datetime
+import time
+
 
 if sys.version_info >= (3, 0):
 
@@ -697,31 +702,94 @@ class DualControl(object):
                 return True
             elif event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0:
+                    # print('0')
                     world.restart()
-                #elif event.button == 1:
+                #elif event.button == 1: #square
                  #    world.hud.toggle_info()
-                #elif event.button == 2:
+                #elif event.button == 2: #circle
                 #    world.camera_manager.toggle_camera()
                 #elif event.button == 3:
                  #   world.next_weather()
-#                 elif event.button == 3:
-#                     world.camera_manager.toggle_camera()
-#                 elif event.button == self._reverse_idx:
-#                     self._control.gear = 1 if self._control.reverse else -1
-#                 elif event.button == 23:
-#                     world.camera_manager.next_sensor()
-             elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
+                # elif event.button == 3: #triangle
+                #     print('3')
+                #     world.camera_manager.toggle_camera()
+
+                # elif event.button == self._reverse_idx:
+                #     self._control.gear = 1 if self._control.reverse else -1
+                #     print('reverse')
+
+                # elif event.button == 23: #red button press
+                #     print('23')
+                #     world.camera_manager.next_sensor()
+
+                # elif event.button == 4: #right pedal shifter
+                #     print('4')
+                
+                # elif event.button == 5:
+                #     print('5')
+
+                # elif event.button == 6: #R2
+                #     print('6')
+
+                # elif event.button == 7:#L2
+                #     print('7')
+
+                # elif event.button == 8: #share
+                #     print('8')
+                
+                # elif event.button == 9:#option
+                #     print('9')
+
+                # elif event.button == 11:#L3
+                #     print('11')
+
+                # elif event.button == 12:
+                #     print('12')
+
+                # elif event.button == 13:
+                #     print('13')
+
+                # elif event.button == 14: #make this drive
+                #     self._control.gear = 1 
+                #     print('Drive')
+
+                elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
                     self._control.gear = 1 if self._control.reverse else -1
-                    print('Reverse')   
+                    print('Reverse')
+
+                # elif event.button == 16:
+                #     print('16')
+
+                # elif event.button == 17:
+                #     print('17')
+                
+                # elif event.button == 18:
+                #     print('18')
+
+                # elif event.button == 19: #+
+                #     print('19')
+
+                # elif event.button == 20: #-
+                #     print('20')
+
+                # elif event.button == 21: #red button CW
+                #     print('21')
+
+                # elif event.button == 22: #red button ACW
+                #     print('22')
+
+                # elif event.button == 24: 
+                #     print('24')    
+                
 
                 # ==============================================================================
                 # -- Blinkers Implemented ---------------------------------------------------------
                 # ==============================================================================
                 if isinstance(self._control, carla.VehicleControl):
-                    if event.button == 5:
+                    if event.button == 5: 
                         print('left blinker')
                         current_lights ^= carla.VehicleLightState.LeftBlinker
-                    elif event.button == 4:
+                    elif event.button == 4: 
                         print('right blinker')
                         current_lights ^= carla.VehicleLightState.RightBlinker
 
@@ -890,6 +958,8 @@ class HUD(object):
         self._show_info = True
         self._info_text = []
         self._server_clock = pygame.time.Clock()
+        self.start_time = time.time()
+        self.end_time = None
         self.last_time = -1
         self.count = 0
 
@@ -938,7 +1008,8 @@ class HUD(object):
 
         evaluations.speedTest(world.player,self)
         evaluations.parkTest(world.player, self.count, self)
-        evaluations.collisions( world.collision_sensor,collision)
+        
+        # evaluations.collisions( world.collision_sensor,collision)
         evaluations.instructortest(world.player, self)
 
 
@@ -969,7 +1040,7 @@ class HUD(object):
                 ('Reverse:', c.reverse),
                 ('Hand brake:', c.hand_brake),
                 ('Manual:', c.manual_gear_shift),
-                'Gear:        %s' % {-1: 'R', 0: 'N'}.get(c.gear, c.gear)]
+                'Gear:        %s' % {-1: 'R', 0: 'D'}.get(c.gear, c.gear)]
         elif isinstance(c, carla.WalkerControl):
             self._info_text += [
                 ('Speed:', c.speed, 0.0, 5.556),
@@ -1132,8 +1203,13 @@ class Evaluations(object):
     wrong_blinker_fail = False 
     no_blinker__fail = False 
     collision_fail = False
-   
-    #################################################################
+    instructor_fail = False
+    speedTest = False
+    result = 'pass'
+    end_time  = 0
+
+    number_of_col= 0
+
 
     def __init__(self):
         self.left_light_states = [carla.VehicleLightState.LeftBlinker, 33, 35, 163, 96, 97, 99, 227, 36, 37, 39, 167, 100, 101, 103, 231]
@@ -1141,6 +1217,11 @@ class Evaluations(object):
         self.no_blinker__fail = False
         self.wrong_blinker_fail = False
         self.collision_fail= False
+        self.instructor_fail = False
+        self.result = 'pass'
+        self.end_time = 0
+        self.number_of_col =0
+        
         
 
     def speedTest(self, car, hud):
@@ -1148,25 +1229,42 @@ class Evaluations(object):
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
         if (speed >15):
             hud.notification('Slow Down!')
-            print('Over Speed!')
-        else:
-            print('Car at rest')
+            # print('Over Speed!')
+
 
     def parkTest(self, car, count, hud):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
         t = car.get_transform()
-        if(((t.location.x >184 and t.location.x <188) and (t.location.y >19 and t.location.y <26)) and speed == 0 and (t.rotation.yaw>83 and t.rotation.yaw<93) and count==3):
+        # print(count)
+        if(((t.location.x >180 and t.location.x <188) and (t.location.y >19 and t.location.y <26)) and speed == 0 and (t.rotation.yaw>83 and t.rotation.yaw<93) and count==3):
             hud.notification('You Have Parked Successfully')
+
+            self.generateReport()
+
+            
             pygame.quit()
+            # current_time = datetime.datetime.now()
+            # self.end_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
+
             print ('Parked')
         #else:
             #print('Not parked')
 
-    def collisions(self, sensor,collision):
+    def collisions(self,list):
 
-        colhist = len(sensor.get_collision_history())
-        self.collision_fail = True
+        self.number_of_col+=1
+
+
+        #colhist = len(sensor.get_collision_history())
+
+        #print ('here',colhist)
+        if(self.number_of_col >=1):
+            self.collision_fail =True
+        
+        # print(list)
+        # print("sssdsd",self.number_of_col)
+        #self.collision_fail = True
 
 
         # ID = type_ID.startswith("vehicle.") 
@@ -1177,11 +1275,11 @@ class Evaluations(object):
         #collision = [colhist[x + self.frame - 200] for x in range(0, 200)]
         #max_col = max(1.0, max(collision))
         #collision = [x / max_col for x in collision]
-        #print(colhist)
+        # print("ddddd",colhist)
 
  
     def check_blinker_parking(self,car,event):
-        print("INSIDE Blinker")
+        # print("INSIDE Blinker")
         light_state = car.get_light_state()
         lane_types = set(x.type for x in event.crossed_lane_markings)
         text = ['%r' % str(x).split()[-1] for x in lane_types]
@@ -1208,10 +1306,166 @@ class Evaluations(object):
         t = car.get_transform()
         if (t.location.x >184 and t.location.x <191) and (t.location.y >40 and t.location.y <72):
             self.instructor_fail = True #flags if the the driver goes beyond the designated parking instruction
-            #print("instruction violated")
+            print("instruction violated")
+            # current_time = datetime.datetime.now()
+            # self.end_time = current_time.strftime("%H:%M:%S")
+            # print (self.end_time)
+            hud.notification('instruction violated')
+
+            self.generateReport()
+                
+            pygame.quit()
+            
+
+    def generateReport(self):#self,start_time,end_time,duration,cartype,num_faults,immediate_fail,collisions,speeding,blinkers,instructions,result):
+        # # Get today's date, start time, and end time from the OS system
+        today = datetime.date.today().strftime('%Y-%m-%d')
+        current_time = datetime.datetime.now()
+        start_time = current_time.strftime("%H:%M:%S")
+        start_time = time.strftime('%H:%M:%S')
+        end_time = time.strftime('%H:%M:%S')
+
+        #Calculate duration as the difference between end time and start time
+        # start_time_dt = datetime.datetime.strptime('%H:%M:%S')
+        # print(start_time_dt)
+        # end_time_dt = datetime.datetime.strptime(end_time, '%H:%M:%S')
+        # duration_td = self.end_time - start_time
+        # duration = str(duration_td) 
+        cartype = "Dodge Charger"
+
+       
+        # Define other data for the table 1
+        num_faults = 5
+        immediate_fail = 'No'
+
+        #################################### fail-variables#################################
+        blinker_test = "No"
+        instructions_test = "No"
+        Overspeeding_test= "No"
+        collisons_test = "No"
 
 
-evaluations = Evaluations()
+        if(self.no_blinker__fail == True):
+            blinker_test = "yes"
+
+        if(self.wrong_blinker_fail == True): #why it failed
+            blinker_test = "yes"
+
+        if(self.speedTest == True):
+            Overspeeding_test = "yes"
+
+        if(self.instructor_fail == True):
+            instructions_test = "yes"
+            immediate_fail = "yes"
+
+        if(self.collision_fail == True):
+            collisons_test = "yes"
+            immediate_fail = "yes"
+        #----------------------------------
+        if (immediate_fail == 'yes'):
+            self.result = 'Failed'
+        
+
+
+        data = [['Evaluation Table'],
+                ['Today\'s Date:', today],
+                # ['Start Time:', start_time],
+                ['End Time:', self.end_time],
+                # ['Duration:', self.durationtime], 
+                ['Vehicle: ', cartype],
+                ['Number of Faults:', num_faults],
+                ['Immediate Fail:', immediate_fail]]
+
+        # Create the table and apply style
+        table = Table(data, colWidths=[120, 220])
+        table.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                                ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                                ('FONTSIZE', (0,0), (-1,0), 12),
+                                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                                ('GRID', (0,0), (-1,-1), 1, colors.black),
+                                ('SPAN', (0,0), (1,0))]))
+
+        # Define other data for the table 1
+
+
+        #---------------------------
+        #--make variables for this--
+        #---------------------------
+
+        data2 = [['Immediate Fail'],
+                ['Collisions', collisons_test],
+                ['Not Following Instructions', ''],
+                ['Exceed Time Limit', '']
+                ]
+
+        # Create the table and apply style
+        table2 = Table(data2, colWidths=[120, 220])
+        table2.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                                ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                                ('FONTSIZE', (0,0), (-1,0), 12),
+                                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                                ('GRID', (0,0), (-1,-1), 1, colors.black), 
+                                ('SPAN', (0,0), (1,0))]))
+
+        # Define other data for the table 3
+        #---------------------------
+        #--make variables for this--
+        #---------------------------
+
+       
+
+        data3 = [['Number of Faults'],
+                ['Over Speeding', Overspeeding_test],
+                ['Not using blinkers', blinker_test],
+                ['Collisions', self.number_of_col],
+                ['Not Following Instructions', instructions_test]]
+
+        # Create the table and apply style
+        table3 = Table(data3, colWidths=[120, 220])
+        table3.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                                ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                                ('FONTSIZE', (0,0), (-1,0), 12),
+                                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                                ('GRID', (0,0), (-1,-1), 1, colors.black), 
+                                ('SPAN', (0,0), (1,0))]))
+
+        # Define other data for the table 1
+        #---------------------------
+        #--make variables for this--
+        #---------------------------
+        data4 = [['Result', self.result]]
+
+        # Create the table and apply style
+        table4 = Table(data4, colWidths=[120, 220])
+        table4.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                                ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                                ('FONTSIZE', (0,0), (-1,0), 12),
+                                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                                ('GRID', (0,0), (-1,-1), 1, colors.black)]
+                                ))
+
+        # Create the PDF document and add the table
+        doc = SimpleDocTemplate("Parking_Evaluation.pdf", pagesize=letter)
+        doc.build([table, table2, table3, table4])
+
+        print('PDF report generated successfully!')
+               
 
 
 # ==============================================================================
@@ -1219,6 +1473,7 @@ evaluations = Evaluations()
 # ==============================================================================
 
 class SafetyDistance(object):
+
     def __init__(self, parent_actor, hud, side):
         self.sensor = None
         self._parent = parent_actor
@@ -1309,6 +1564,8 @@ class SafetyDistance(object):
 
 
 class CollisionSensor(object):
+    # col_list = []
+    
     def __init__(self, parent_actor, hud):
         self.sensor = None
         self.history = []
@@ -1317,6 +1574,9 @@ class CollisionSensor(object):
         world = self._parent.get_world()
         bp = world.get_blueprint_library().find('sensor.other.collision')
         self.sensor = world.spawn_actor(bp, carla.Transform(), attach_to=self._parent)
+        self.col_list = []
+        self.other_actor_id = None
+        self.temp_id = None
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
         weak_self = weakref.ref(self)
@@ -1330,16 +1590,31 @@ class CollisionSensor(object):
 
     @staticmethod
     def _on_collision(weak_self, event):
+        
         self = weak_self()
+        
         if not self:
             return
         actor_type = get_actor_display_name(event.other_actor)
+        # print(event)
+       
+        print(event.other_actor.id)
+        if(temp_id != event.other_actor.id):
+            self.other_actor_id = event.other_actor.id
+            temp_id = self.other_actor_id
+        
+        
+
+        
+
         self.hud.notification('Collision with %r' % actor_type)
         impulse = event.normal_impulse
         intensity = math.sqrt(impulse.x**2 + impulse.y**2 + impulse.z**2)
         self.history.append((event.frame, intensity))
         if len(self.history) > 4000:
             self.history.pop(0)
+        # col_list.append(actor_type)
+        # evaluations.collisions(set(col_list)) 
 
 
 # ==============================================================================
@@ -1545,7 +1820,7 @@ class CameraManager(object):
         Attachment = carla.AttachmentType
 
         
-        lx,ly,lz = [0.5, -1, 1.0]  ###########mirrores
+        lx,ly,lz = [0.5, -1, 1.0]  ###########mirrors
         rx,ry,rz = [0.5, 1, 1.0]
 
         if not self._parent.type_id.startswith("walker.pedestrian"):
@@ -1616,7 +1891,7 @@ class CameraManager(object):
         # self.index = None
         SensorManager(world, self.display_man, 'RGBCamera',self.hud, self._camera_transforms[0][0],#carla.Transform(carla.Location(x=lx, y=ly, z=lz), carla.Rotation(pitch=mp.left_pitch, yaw=mp.left_yaw)), 
                       self._parent, {}, display_pos=[0, 0] )
-        SensorManager(world, self.display_man, 'RGBCamera',self.hud ,  carla.Transform(carla.Location(x=-0.1,y=-0.4, z=1.2), carla.Rotation(yaw=+00)), 
+        SensorManager(world, self.display_man, 'RGBCamera',self.hud ,  carla.Transform(carla.Location(x=-0.1,y=-0.4, z=1.2), carla.Rotation(yaw=+00)), #
                         self._parent, {}, display_pos=[0, 1] )
         SensorManager(world, self.display_man, 'RGBCamera',self.hud , self._camera_transforms[1][0],#carla.Transform(carla.Location(x=rx, y=ry, z=rz), carla.Rotation(pitch=mp.right_pitch,yaw=mp.right_yaw)), 
                         self._parent, {}, display_pos=[0, 2] )       
@@ -1723,6 +1998,32 @@ class SensorManager:
             disp_size = self.display_man.get_display_size()
             camera_bp.set_attribute('image_size_x', str(disp_size[0]))
             camera_bp.set_attribute('image_size_y', str(disp_size[1]))
+
+            # for key in sensor_options:
+            #     camera_bp.set_attribute(key, sensor_options[key])
+
+            camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
+            camera.listen(self.save_rgb_image)
+
+            return camera
+        
+        if sensor_type == 'leftcam':
+            camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+            camera_bp.set_attribute('image_size_x', '800')
+            camera_bp.set_attribute('image_size_y', '600')
+
+            for key in sensor_options:
+                camera_bp.set_attribute(key, sensor_options[key])
+
+            camera = self.world.spawn_actor(camera_bp, transform, attach_to=attached)
+            camera.listen(self.save_rgb_image)
+
+            return camera
+        
+        if sensor_type == 'rightcam':
+            camera_bp = self.world.get_blueprint_library().find('sensor.camera.rgb')
+            camera_bp.set_attribute('image_size_x', '800')
+            camera_bp.set_attribute('image_size_y', '600')
 
             for key in sensor_options:
                 camera_bp.set_attribute(key, sensor_options[key])
@@ -1916,6 +2217,9 @@ class CustomTimer:
     def time(self):
         return self.timer()
 
+
+
+evaluations = Evaluations()
 # ==============================================================================
 # -- game_loop() ---------------------------------------------------------------
 # ==============================================================================
@@ -2107,8 +2411,8 @@ def main():
     argparser.add_argument(
         '--host',
         metavar='H',
-        default='127.0.0.1',
-        help='IP of the host server (default: 127.0.0.1)')
+        default='127.0.0.12',
+        help='IP of the host server (default: 127.0.0.12)')
     argparser.add_argument(
         '-p', '--port',
         metavar='P',
@@ -2122,8 +2426,8 @@ def main():
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
-        default='4500x1080',
-        help='window resolution (default: 4500x1080)')
+        default='1920x1080', #5770x1080
+        help='window resolution (default: 1920x1080)')
     argparser.add_argument(
         '--filter',
         metavar='PATTERN',
