@@ -704,21 +704,24 @@ class DualControl(object):
                 #    world.camera_manager.toggle_camera()
                 #elif event.button == 3:
                  #   world.next_weather()
-                elif event.button == 3:
-                    world.camera_manager.toggle_camera()
-                elif event.button == self._reverse_idx:
+#                 elif event.button == 3:
+#                     world.camera_manager.toggle_camera()
+#                 elif event.button == self._reverse_idx:
+#                     self._control.gear = 1 if self._control.reverse else -1
+#                 elif event.button == 23:
+#                     world.camera_manager.next_sensor()
+             elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
                     self._control.gear = 1 if self._control.reverse else -1
-                elif event.button == 23:
-                    world.camera_manager.next_sensor()
+                    print('Reverse')   
 
                 # ==============================================================================
                 # -- Blinkers Implemented ---------------------------------------------------------
                 # ==============================================================================
                 if isinstance(self._control, carla.VehicleControl):
-                    if event.button == 1:
+                    if event.button == 5:
                         print('left blinker')
                         current_lights ^= carla.VehicleLightState.LeftBlinker
-                    elif event.button == 2:
+                    elif event.button == 4:
                         print('right blinker')
                         current_lights ^= carla.VehicleLightState.RightBlinker
 
