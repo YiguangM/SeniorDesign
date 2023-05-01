@@ -482,9 +482,9 @@ class DualControl(object):
 #                     self._control.gear = 1 if self._control.reverse else -1
 #                 elif event.button == 23:
 #                     world.camera_manager.next_sensor()
-             elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
-                    self._control.gear = 1 if self._control.reverse else -1
-                    print('Reverse')
+            elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
+                   self._control.gear = 1 if self._control.reverse else -1
+                   print('Reverse')
                 
                 if isinstance(self._control, carla.VehicleControl):
                     if event.button == 5: #left gearpedal
