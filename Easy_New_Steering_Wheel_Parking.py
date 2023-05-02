@@ -749,12 +749,12 @@ class DualControl(object):
                 # elif event.button == 13:
                 #     print('13')
 
-                # elif event.button == 14: #make this drive
-                #     self._control.gear = 1 
-                #     print('Drive')
+                elif event.button == 14: #make this drive
+                     self._control.gear = 1 
+                     print('Drive')
 
                 elif ((event.button == 15) and (self._reverse_idx)):#make this reverse (gearbox)
-                    self._control.gear = 1 if self._control.reverse else -1
+                    self._control.gear = -1 #if self._control.reverse else -1
                     print('Reverse')
 
                 # elif event.button == 16:
