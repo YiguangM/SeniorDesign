@@ -12,7 +12,7 @@ import subprocess
 
 def Show_Menu():
     start_button.pack_forget()
-    next_button.pack_forget()
+    scenario_button.pack_forget()
     
     parking_btn.pack()
     driving_btn.pack()
@@ -58,10 +58,24 @@ def Drive_Hard():
     subprocess.Popen(['start', 'cmd', '/k', cmd3], shell=True)
 
 def go_back():
-    parking_btn.pack()
-    driving_btn.pack()
-    drive_easy.pack_forget()
-    drive_hard.pack_forget()
+    if(parking_btn.winfo_viewable()):
+        parking_btn.pack_forget()
+        driving_btn.pack_forget()
+        start_button.pack()
+        scenario_button.pack()
+    elif(drive_easy.winfo_viewable()):
+        parking_btn.pack()
+        driving_btn.pack()
+        drive_easy.pack_forget()
+        drive_hard.pack_forget()
+    else:
+        pass
+
+def end():
+    pid = os.getpid()
+    os.system(f"taskkill /PID {pid} /F")
+    os.system('taskkill /f /im notepad.exe') ## Replace Notepad.exe with the name of the server and the pygame windows
+
 
 # Create the GUI window
 root = tk.Tk()
@@ -98,21 +112,29 @@ style.configure(
     relief="sunken",
 )
 
-# Create the button
-next_button = ttk.Button(root, text="Scenarios", command=Show_Menu)
+# Create the start buttons
+scenario_button = ttk.Button(root, text="Scenarios", command=Show_Menu)
 start_button = ttk.Button(root, text="Start Server", command=startserver)
 start_button.pack()
-next_button.pack()
+scenario_button.pack()
+
+#Create the Back Button
+back_button = ttk.Button(root, text="Back", command=go_back)
+back_button.pack(side=tk.LEFT)
+
+#Create the End Button
+end_button = ttk.Button(root, text="Exit", command=end)
+end_button.pack(side=tk.RIGHT)
 
 
-
-# Create the option buttons
+# Create the Scenario buttons
 parking_btn = ttk.Button(root, text="Parking", command=Park)
 driving_btn = ttk.Button(root, text="Driving", command=Driving_Menu)
 
 # Creating the driving buttons
 drive_easy = ttk.Button(root, text="Easy", command=Drive_Easy)
 drive_hard = ttk.Button(root, text="Hard", command=Drive_Hard)
+
 
 # Run the GUI loop
 root.mainloop()
