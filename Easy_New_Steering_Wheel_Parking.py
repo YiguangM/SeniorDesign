@@ -800,6 +800,8 @@ class DualControl(object):
                 # ==============================================================================
                 if isinstance(self._control, carla.VehicleControl):
                     if event.button == 5: 
+                        # if light_state in self.left_light_states:
+                        #     current_lights ^= carla.VehicleLightState.RightBlinker
                         print('left blinker')
                         current_lights ^= carla.VehicleLightState.LeftBlinker
                     elif event.button == 4: 
@@ -1024,7 +1026,7 @@ class HUD(object):
         evaluations.parkTest(world.player, self.count, self)
         # evaluations.collisions( world.collision_sensor,collision)
         evaluations.instructortest(world.player, self)
-
+        evaluations.sidewalk_detection(world.player,self)
 
         self.last_time = int(self.simulation_time)
 
@@ -1221,7 +1223,6 @@ class Evaluations(object):
     speedTest = False
     result = 'pass'
     start_time  = datetime.datetime.now().replace(microsecond=0)
-    print(start_time)
     last_time = None
     number_of_col= 0
 
@@ -1236,16 +1237,21 @@ class Evaluations(object):
         self.time_fail = False
         self.result = 'pass'
         self.start_time  = datetime.datetime.now().replace(microsecond=0)
-        
-        self.number_of_col =0
-        
-        
-
+        self.sidewalk_fail= False
+        #----------------------------------
+        self.number_of_speed_exceeded = 0
+        self.number_of_col = 0
+        self.number_of_blinkers_missed = 0
+        self.number_of_inst_violation = 0
+        self.number_of_sidewalk_hit = 0
+    
     def speedTest(self, car, hud):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
-        if (speed >15):
+        if (speed > 20):
             hud.notification('Slow Down!')
+            self.number_of_speed_exceeded += 1
+
             # print('Over Speed!')
 
 
@@ -1253,17 +1259,12 @@ class Evaluations(object):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
         t = car.get_transform()
-        if(((t.location.x >185 and t.location.x <187.5) and (t.location.y >21 and t.location.y <24)) and (t.rotation.yaw>85 and t.rotation.yaw<95) and count>3):
+        if(((t.location.x >185 and t.location.x <187.5) and (t.location.y > 21 and t.location.y < 24)) and (t.rotation.yaw > 85 and t.rotation.yaw < 95) and count>3):
             
             hud.notification('You Have Parked Successfully')
             time.sleep(5)
-            self.generateReport()
-
-            
+            self.generateReport() 
             pygame.quit()
-            # current_time = datetime.datetime.now()
-            # self.end_time = current_time.strftime("%Y-%m-%d %H:%M:%S")
-
             print ('Parked')
         #else:
             #print('Not parked')
@@ -1276,31 +1277,9 @@ class Evaluations(object):
             self.number_of_col=self.number_of_col+1
         self.last_time = time_current
 
-        print(impulse)
-        print(self.number_of_col)
-
-        #colhist = len(sensor.get_collision_history())
-
-        #print ('here',colhist)
         if(self.number_of_col >=3):
             self.collision_fail =True
         
-        # print(list)
-        # print("sssdsd",self.number_of_col)
-        #self.collision_fail = True
-
-
-        # ID = type_ID.startswith("vehicle.") 
-
-        # if sensor.type_id.startswith("vehicle."):
-
-
-        #collision = [colhist[x + self.frame - 200] for x in range(0, 200)]
-        #max_col = max(1.0, max(collision))
-        #collision = [x / max_col for x in collision]
-        # print("ddddd",colhist)
-
- 
     def check_blinker_parking(self,car,event):
         # print("INSIDE Blinker")
         light_state = car.get_light_state()
@@ -1311,6 +1290,7 @@ class Evaluations(object):
             if light_state in self.left_light_states: #invading line with left blinker
                 print('Invade with LB')
                 self.wrong_blinker_fail= True
+                self.number_of_blinkers_missed =+ 1
                 return False
 
             elif light_state in self.right_light_states: #invading line with right blinker
@@ -1320,8 +1300,15 @@ class Evaluations(object):
             else:                        #invading line with no blinker
                 print('Invade lane NB')
                 self.no_blinker__fail = True
+                self.number_of_blinkers_missed =+ 1
                 return False
-            
+    
+    def sidewalk_detection(self, car,hud):
+        t = car.get_transform()
+        if ((t.location.x >= 183 and (t.location.x < 184) )and (t.location.y >-77 and t.location.y <99)):
+            hud.notification('You have hit the sidewalk')
+            self.number_of_sidewalk_hit += 1
+            print ('sidewalk')
 
     def instructortest(self, car, hud):
         v = car.get_velocity()
@@ -1330,26 +1317,20 @@ class Evaluations(object):
         if (t.location.x >184 and t.location.x <191) and (t.location.y >40 and t.location.y <72):
             self.instructor_fail = True #flags if the the driver goes beyond the designated parking instruction
             print("Instruction violated")
-            # current_time = datetime.datetime.now()
-            # self.end_time = current_time.strftime("%H:%M:%S")
-            # print (self.end_time)
             hud.notification('Instruction violated')
-            self.generateReport()
-            time.sleep(7)
-            pygame.quit()
+            self.number_of_inst_violation += 1
+            # self.generateReport()
+            # time.sleep(7)
+            # pygame.quit()
     
     def time_fail(self, duration):
-        print("Duration =",duration)
-
-        # seconds = (duration.hour * 60 + duration.minute) * 60 + duration.second
-        # print("duration seconds", seconds)
-  
+        
         if (duration > 300):
             print("time exceeded of 5 minutes")
             self.time_fail = True
         
 
-    def generateReport(self):#self,start_time,end_time,duration,cartype,num_faults,immediate_fail,collisions,speeding,blinkers,instructions,result):
+    def generateReport(self):
         # # Get today's date, start time, and end time from the OS system
         today = datetime.date.today().strftime('%Y-%m-%d')
         end_time = datetime.datetime.now().replace(microsecond=0)
@@ -1363,42 +1344,62 @@ class Evaluations(object):
 
        
         # Define other data for the table 1
-        num_faults = 5
+        num_faults = 0
         immediate_fail = 'No'
 
         #################################### fail-variables#################################
-        blinker_test = "No"
+        blinker_test = "No (0)"
         instructions_test = "No"
         Overspeeding_test= "No"
         collisons_test = "No"
         time_test = "No"
+        sidewalk_test = "No"
 
 
         if(self.no_blinker__fail == True):
             blinker_test = "yes"
+            
+            self.no_blinker__fail = False
 
         if(self.wrong_blinker_fail == True): #why it failed
             blinker_test = "yes"
+        
+            self.wrong_blinker_fail = False
 
         if(self.speedTest == True):
             Overspeeding_test = "yes"
+            
+            self.speedTest = False
 
         if(self.instructor_fail == True):
             instructions_test = "yes"
             immediate_fail = "yes"
+            
+            self.instructor_fail = False
 
         if(self.collision_fail == True):
             collisons_test = "yes"
             immediate_fail = "yes"
+            
+            self.collision_fail = False
 
         if(self.time_fail == True):
             time_test = "yes"
             immediate_fail = "yes"
+            
+            self.time_fail = False
+
+        if(self.sidewalk_fail == True):
+            sidewalk_test = "yes"
+            immediate_fail = "yes"
+            
+            self.sidewalk_fail = False
+
         #----------------------------------
         if (immediate_fail == 'yes'):
             self.result = 'Failed'
         
-
+        num_faults = num_faults + self.number_of_col + self.number_of_speed_exceeded + self.number_of_inst_violation + self.number_of_sidewalk_hit
 
         data = [['Evaluation Table'],
                 ['Today\'s Date:', today],
@@ -1432,7 +1433,8 @@ class Evaluations(object):
         data2 = [['Immediate Fail'],
                 ['Collisions', collisons_test],
                 ['Not Following Instructions', instructions_test],
-                ['Exceed Time Limit', time_test]
+                ['Exceed Time Limit', time_test],
+                ['Sidewalk Hit(s)', sidewalk_test]
                 ]
 
         # Create the table and apply style
@@ -1456,10 +1458,12 @@ class Evaluations(object):
        
 
         data3 = [['Number of Faults'],
-                ['Over Speeding', Overspeeding_test],
-                ['Not using blinkers', blinker_test],
-                ['Collisions', self.number_of_col],
-                ['Not Following Instructions', instructions_test]]
+                ['1) Over Speeding', Overspeeding_test + "(" + str(self.number_of_speed_exceeded) + ")"],
+                ['2) Not using blinkers', blinker_test + "(" + str(self.number_of_blinkers_missed) + ")"],
+                ['3) Time Exceeded', time_test ,duration ],
+                ['4) Number of Collisions', collisons_test + "(" + self.number_of_col + ")"],
+                ['5) Not Following Instructions', instructions_test + "(" + self.number_of_inst_violation + ")"],
+                ['6) Sidewalk Hit(s)', sidewalk_test + "(" + self.number_of_sidewalk_hit + ")"]]
 
         # Create the table and apply style
         table3 = Table(data3, colWidths=[120, 220])
@@ -1514,6 +1518,8 @@ class SafetyDistance(object):
         self.distance = 0
         self.other_actor = None
         self.side = side
+        self.last_actor= None
+        self.last_dist = None
 
         bound_x = self._parent.bounding_box.extent.x
         bound_y = self._parent.bounding_box.extent.y
@@ -1563,21 +1569,17 @@ class SafetyDistance(object):
             bp.set_attribute('hit_radius', '0.5')
         
 
-        # if ((self.last_actor == world.obstacle_detector.other_actor and self.last_dist == world.obstacle_detector.distance) 
-        #     or world.obstacle_detector.other_actor == 'static.road' or world.obstacle_detector.other_actor == 'static.roadLine'):
-        #     world.obstacle_detector.distance = 0.0
-        #     world.obstacle_detector.other_actor = 'None'
-        # else:
-        #     self.last_actor = world.obstacle_detector.other_actor
-        #     self.last_dist = world.obstacle_detector.distance
+
 
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
+
+
         weak_self = weakref.ref(self)
-        self.sensor.listen(lambda event: SafetyDistance._on_obstacle(weak_self, event))
+        self.sensor.listen(lambda event: SafetyDistance._on_obstacle(weak_self, event,world))
 
     @staticmethod
-    def _on_obstacle(weak_self, event):
+    def _on_obstacle(weak_self, event,world):
         self = weak_self()
         if not self:
             return
@@ -1619,6 +1621,11 @@ class SafetyDistance(object):
     
         self.distance = event.distance
         self.other_actor = event.other_actor.type_id
+        # # actor = (get_actor_display_name(event.other_actor)) 
+        # print(event.other_actor.type_id)
+
+        # if(get_actor_display_name(event.other_actor) != "vehicle.dodge.charger_2020"):
+        #     print(event.other_actor)
 
         # if(self.side == 'front'):
         #     print('front', self.other_actor, self.distance)
@@ -1628,6 +1635,16 @@ class SafetyDistance(object):
         #     print('left', self.other_actor, self.distance)
         # elif(self.side == 'right'):
         #     print('right', self.other_actor, self.distance)
+
+        
+        # if ((self.last_actor == world.obstacle_detector.other_actor) 
+        #     or world.obstacle_detector.other_actor == 'static.road' or world.obstacle_detector.other_actor == 'static.roadLine'):
+        #    world.obstacle_detector.other_actor = 'None'
+        # else:
+        #     self.last_actor = world.obstacle_detector.other_actor
+
+        # print(self.last_actor)
+            # evaluations.sidewalk_detection(event)
 
 
 # ==============================================================================
@@ -1712,7 +1729,11 @@ class LaneInvasionSensor(object):
         lane_types = set(x.type for x in event.crossed_lane_markings)
         text = ['%r' % str(x).split()[-1] for x in lane_types]
         self.hud.notification('Crossed line %s' % ' and '.join(text))
+
+      
         evaluations.check_blinker_parking(car,event) 
+        # evaluations.sidewalk_detection(event)
+
 
 
 
