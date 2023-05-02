@@ -229,6 +229,10 @@ class World(object):
         self.obstacle_behind = None
         self.obstacle_left = None
         self.obstacle_right = None
+        self.obstacle_front_right_corner = None
+        self.obstacle_rear_right_corner = None
+        self.obstacle_front_left_corner = None
+        self.obstacle_rear_left_corner = None
         self._weather_presets = find_weather_presets()
         self._weather_index = 0
         self._actor_filter = args.filter
@@ -312,6 +316,10 @@ class World(object):
         self.obstacle_behind = SafetyDistance(self.player, self.hud,'behind')
         self.obstacle_left = SafetyDistance(self.player, self.hud,'left')
         self.obstacle_right = SafetyDistance(self.player, self.hud,'right')
+        self.obstacle_front_right_corner = SafetyDistance(self.player, self.hud,'front right corner')
+        self.obstacle_rear_right_corner = SafetyDistance(self.player, self.hud,'rear right corner')
+        self.obstacle_front_left_corner = SafetyDistance(self.player, self.hud,'front left corner')
+        self.obstacle_rear_left_corner = SafetyDistance(self.player, self.hud,'rear left corner')
         self.gnss_sensor = GnssSensor(self.player)
         self.imu_sensor = IMUSensor(self.player)
         self.camera_manager = CameraManager(self.player, self.hud, self._gamma,self.display_manager)
@@ -387,7 +395,11 @@ class World(object):
             self.obstacle_front.sensor,
             self.obstacle_behind.sensor,
             self.obstacle_left.sensor,
-            self.obstacle_right.sensor,]
+            self.obstacle_right.sensor,
+            self.obstacle_front_right_corner,
+            self.obstacle_rear_right_corner,
+            self.obstacle_front_left_corner ,
+            self.obstacle_rear_left_corner]
         for sensor in sensors:
             if sensor is not None:
                 sensor.stop()
@@ -725,8 +737,8 @@ class DualControl(object):
                 # elif event.button == 4: #right pedal shifter
                 #     print('4')
                 
-                # elif event.button == 5:
-                #     print('5')
+                elif event.button == 5:
+                    print('5')
 
                 # elif event.button == 6: #R2
                 #     print('6')
@@ -760,8 +772,9 @@ class DualControl(object):
                 # elif event.button == 16:
                 #     print('16')
 
-                # elif event.button == 17:
-                #     print('17')
+                elif event.button == 17: #making this as parking
+                    self._control.gear = 0
+                    print('Parked')
                 
                 # elif event.button == 18:
                 #     print('18')
@@ -856,6 +869,7 @@ class DualControl(object):
                     self._lights = current_lights
                     world.player.set_light_state(carla.VehicleLightState(self._lights))
                 self._control.reverse = self._control.gear < 0
+                self._control.hand_brake = self._control.gear == 0
             elif isinstance(self._control, carla.WalkerControl):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time())
             world.player.apply_control(self._control)
@@ -1001,14 +1015,13 @@ class HUD(object):
       
 
         if ((int(self.simulation_time) - self.last_time) == 1):
-            if (round(speed)==0):
+            if (round(speed)==0 and world.player.get_control().hand_brake):
                 self.count = self.count + 1
             else:
                 self.count = 0
 
         evaluations.speedTest(world.player,self)
         evaluations.parkTest(world.player, self.count, self)
-        
         # evaluations.collisions( world.collision_sensor,collision)
         evaluations.instructortest(world.player, self)
 
@@ -1204,10 +1217,12 @@ class Evaluations(object):
     no_blinker__fail = False 
     collision_fail = False
     instructor_fail = False
+    time_fail = False
     speedTest = False
     result = 'pass'
-    end_time  = 0
-
+    start_time  = datetime.datetime.now().replace(microsecond=0)
+    print(start_time)
+    last_time = None
     number_of_col= 0
 
 
@@ -1218,8 +1233,10 @@ class Evaluations(object):
         self.wrong_blinker_fail = False
         self.collision_fail= False
         self.instructor_fail = False
+        self.time_fail = False
         self.result = 'pass'
-        self.end_time = 0
+        self.start_time  = datetime.datetime.now().replace(microsecond=0)
+        
         self.number_of_col =0
         
         
@@ -1236,10 +1253,10 @@ class Evaluations(object):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
         t = car.get_transform()
-        # print(count)
-        if(((t.location.x >180 and t.location.x <188) and (t.location.y >19 and t.location.y <26)) and speed == 0 and (t.rotation.yaw>83 and t.rotation.yaw<93) and count==3):
+        if(((t.location.x >185 and t.location.x <187.5) and (t.location.y >21 and t.location.y <24)) and (t.rotation.yaw>85 and t.rotation.yaw<95) and count>3):
+            
             hud.notification('You Have Parked Successfully')
-
+            time.sleep(5)
             self.generateReport()
 
             
@@ -1251,15 +1268,21 @@ class Evaluations(object):
         #else:
             #print('Not parked')
 
-    def collisions(self,list):
+    def collisions(self,impulse):
+        time_current = time.time()
+        if(self.last_time == None):
+            self.number_of_col=self.number_of_col+1
+        elif(time_current - self.last_time >0.4 and impulse > 5):
+            self.number_of_col=self.number_of_col+1
+        self.last_time = time_current
 
-        self.number_of_col+=1
-
+        print(impulse)
+        print(self.number_of_col)
 
         #colhist = len(sensor.get_collision_history())
 
         #print ('here',colhist)
-        if(self.number_of_col >=1):
+        if(self.number_of_col >=3):
             self.collision_fail =True
         
         # print(list)
@@ -1291,11 +1314,11 @@ class Evaluations(object):
                 return False
 
             elif light_state in self.right_light_states: #invading line with right blinker
-                print('invade lane RB')
+                print('Invade lane RB')
                 return True
             
             else:                        #invading line with no blinker
-                print('invade lane NB')
+                print('Invade lane NB')
                 self.no_blinker__fail = True
                 return False
             
@@ -1306,31 +1329,36 @@ class Evaluations(object):
         t = car.get_transform()
         if (t.location.x >184 and t.location.x <191) and (t.location.y >40 and t.location.y <72):
             self.instructor_fail = True #flags if the the driver goes beyond the designated parking instruction
-            print("instruction violated")
+            print("Instruction violated")
             # current_time = datetime.datetime.now()
             # self.end_time = current_time.strftime("%H:%M:%S")
             # print (self.end_time)
-            hud.notification('instruction violated')
-
+            hud.notification('Instruction violated')
             self.generateReport()
-                
+            time.sleep(7)
             pygame.quit()
-            
+    
+    def time_fail(self, duration):
+        print("Duration =",duration)
+
+        # seconds = (duration.hour * 60 + duration.minute) * 60 + duration.second
+        # print("duration seconds", seconds)
+  
+        if (duration > 300):
+            print("time exceeded of 5 minutes")
+            self.time_fail = True
+        
 
     def generateReport(self):#self,start_time,end_time,duration,cartype,num_faults,immediate_fail,collisions,speeding,blinkers,instructions,result):
         # # Get today's date, start time, and end time from the OS system
         today = datetime.date.today().strftime('%Y-%m-%d')
-        current_time = datetime.datetime.now()
-        start_time = current_time.strftime("%H:%M:%S")
-        start_time = time.strftime('%H:%M:%S')
-        end_time = time.strftime('%H:%M:%S')
+        end_time = datetime.datetime.now().replace(microsecond=0)
 
-        #Calculate duration as the difference between end time and start time
-        # start_time_dt = datetime.datetime.strptime('%H:%M:%S')
-        # print(start_time_dt)
-        # end_time_dt = datetime.datetime.strptime(end_time, '%H:%M:%S')
-        # duration_td = self.end_time - start_time
-        # duration = str(duration_td) 
+        duration = datetime.timedelta(hours=(end_time.hour - self.start_time.hour),minutes=(end_time.minute - self.start_time.minute),seconds=(end_time.second - self.start_time.second))
+        duration_seconds = int(duration.total_seconds())
+
+        Evaluations.time_fail(self, duration_seconds)
+        
         cartype = "Dodge Charger"
 
        
@@ -1343,6 +1371,7 @@ class Evaluations(object):
         instructions_test = "No"
         Overspeeding_test= "No"
         collisons_test = "No"
+        time_test = "No"
 
 
         if(self.no_blinker__fail == True):
@@ -1361,6 +1390,10 @@ class Evaluations(object):
         if(self.collision_fail == True):
             collisons_test = "yes"
             immediate_fail = "yes"
+
+        if(self.time_fail == True):
+            time_test = "yes"
+            immediate_fail = "yes"
         #----------------------------------
         if (immediate_fail == 'yes'):
             self.result = 'Failed'
@@ -1369,9 +1402,9 @@ class Evaluations(object):
 
         data = [['Evaluation Table'],
                 ['Today\'s Date:', today],
-                # ['Start Time:', start_time],
-                ['End Time:', self.end_time],
-                # ['Duration:', self.durationtime], 
+                ['Start Time:', self.start_time],
+                ['End Time:', end_time],
+                ['Duration:', duration], 
                 ['Vehicle: ', cartype],
                 ['Number of Faults:', num_faults],
                 ['Immediate Fail:', immediate_fail]]
@@ -1398,8 +1431,8 @@ class Evaluations(object):
 
         data2 = [['Immediate Fail'],
                 ['Collisions', collisons_test],
-                ['Not Following Instructions', ''],
-                ['Exceed Time Limit', '']
+                ['Not Following Instructions', instructions_test],
+                ['Exceed Time Limit', time_test]
                 ]
 
         # Create the table and apply style
@@ -1495,6 +1528,7 @@ class SafetyDistance(object):
         #x=0, y=bound_y, z=0.5 carla.Rotation(pitch=-30,yaw=180)
         #x=0, y=-bound_y, z=0.5 carla.Rotation(pitch=-30,yaw=180)
 
+
         if(side == 'behind'):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=-bound_x, y=0, z=bound_z),carla.Rotation(0,180,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
@@ -1511,7 +1545,31 @@ class SafetyDistance(object):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=bound_x, y=0, z=bound_z),carla.Rotation(0,0,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
+        elif(side == 'front right corner'):
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,45,0)), attach_to=self._parent)
+            bp.set_attribute('distance','10')
+            bp.set_attribute('hit_radius', '0.5')
+        elif(side == 'rear right corner'):
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,135,0)), attach_to=self._parent)
+            bp.set_attribute('distance','10')
+            bp.set_attribute('hit_radius', '0.5')
+        elif(side == 'front left corner'):
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,225,0)), attach_to=self._parent)
+            bp.set_attribute('distance','10')
+            bp.set_attribute('hit_radius', '0.5')
+        elif(side == 'rear left corner'):
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,315,0)), attach_to=self._parent)
+            bp.set_attribute('distance','10')
+            bp.set_attribute('hit_radius', '0.5')
         
+
+        # if ((self.last_actor == world.obstacle_detector.other_actor and self.last_dist == world.obstacle_detector.distance) 
+        #     or world.obstacle_detector.other_actor == 'static.road' or world.obstacle_detector.other_actor == 'static.roadLine'):
+        #     world.obstacle_detector.distance = 0.0
+        #     world.obstacle_detector.other_actor = 'None'
+        # else:
+        #     self.last_actor = world.obstacle_detector.other_actor
+        #     self.last_dist = world.obstacle_detector.distance
 
         # We need to pass the lambda a weak reference to self to avoid circular
         # reference.
@@ -1544,6 +1602,20 @@ class SafetyDistance(object):
                     self.hud.notification('You are too close to the object left of you')
                 elif(self.side == 'right'):
                     self.hud.notification('You are too close to the object right of you')
+                # elif(self.side == 'front right corner'):
+                #     print("front right")
+                #     self.hud.notification('You are too close to the object front right corner of the car')
+                # elif(self.side == 'rear right corner'):
+                #     print("rear right")
+                #     self.hud.notification('You are too close to the object rear right of you')
+                # elif(self.side == 'front left corner'):
+                #     print("front left")
+                #     self.hud.notification('You are too close to the object front left corner of the car')
+                # elif(self.side == 'rear left corner'):
+                #     self.hud.notification('You are too close to the object rear left of you')
+                #     print("rear left")
+
+
     
         self.distance = event.distance
         self.other_actor = event.other_actor.type_id
@@ -1596,16 +1668,7 @@ class CollisionSensor(object):
         if not self:
             return
         actor_type = get_actor_display_name(event.other_actor)
-        # print(event)
        
-        print(event.other_actor.id)
-        if(temp_id != event.other_actor.id):
-            self.other_actor_id = event.other_actor.id
-            temp_id = self.other_actor_id
-        
-        
-
-        
 
         self.hud.notification('Collision with %r' % actor_type)
         impulse = event.normal_impulse
@@ -1614,7 +1677,9 @@ class CollisionSensor(object):
         if len(self.history) > 4000:
             self.history.pop(0)
         # col_list.append(actor_type)
-        # evaluations.collisions(set(col_list)) 
+        evaluations.collisions(intensity)
+
+
 
 
 # ==============================================================================
