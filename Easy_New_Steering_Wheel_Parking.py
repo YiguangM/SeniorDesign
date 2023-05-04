@@ -1458,12 +1458,12 @@ class Evaluations(object):
        
 
         data3 = [['Number of Faults'],
-                ['1) Over Speeding', Overspeeding_test + "(" + str(self.number_of_speed_exceeded) + ")"],
-                ['2) Not using blinkers', blinker_test + "(" + str(self.number_of_blinkers_missed) + ")"],
+                ['1) Over Speeding', Overspeeding_test ,self.number_of_speed_exceeded],
+                ['2) Not using blinkers', blinker_test, self.number_of_blinkers_missed,
                 ['3) Time Exceeded', time_test ,duration ],
-                ['4) Number of Collisions', collisons_test + "(" + self.number_of_col + ")"],
-                ['5) Not Following Instructions', instructions_test + "(" + self.number_of_inst_violation + ")"],
-                ['6) Sidewalk Hit(s)', sidewalk_test + "(" + self.number_of_sidewalk_hit + ")"]]
+                ['4) Number of Collisions', collisons_test , self.number_of_col ],
+                ['5) Not Following Instructions', instructions_test ,self.number_of_inst_violation ],
+                ['6) Sidewalk Hit(s)', sidewalk_test , self.number_of_sidewalk_hit ]]]
 
         # Create the table and apply style
         table3 = Table(data3, colWidths=[120, 220])
