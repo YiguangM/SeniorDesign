@@ -1538,7 +1538,7 @@ class SafetyDistance(object):
         if(side == 'behind'):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=-bound_x, y=0, z=bound_z),carla.Rotation(0,180,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
-            bp.set_attribute('hit_radius', '0.5')
+            bp.set_attribute('hit_radius', '4.5')
         elif(side == 'left'):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,-90,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
@@ -1552,19 +1552,19 @@ class SafetyDistance(object):
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
         elif(side == 'front right corner'):
-            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,45,0)), attach_to=self._parent)
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=bound_x, y=bound_y, z=bound_z),carla.Rotation(0,45,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
         elif(side == 'rear right corner'):
-            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,135,0)), attach_to=self._parent)
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=-bound_x, y=bound_y, z=bound_z),carla.Rotation(0,135,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
         elif(side == 'front left corner'):
-            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,225,0)), attach_to=self._parent)
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=bound_x, y=-bound_y, z=bound_z),carla.Rotation(0,225,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
         elif(side == 'rear left corner'):
-            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=0, y=-bound_y, z=bound_z),carla.Rotation(0,315,0)), attach_to=self._parent)
+            self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=-bound_x, y=-bound_y, z=bound_z),carla.Rotation(0,315,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
         
@@ -1629,8 +1629,9 @@ class SafetyDistance(object):
 
         # if(self.side == 'front'):
         #     print('front', self.other_actor, self.distance)
-        # elif(self.side == 'behind'):
-        #     print('behind', self.other_actor, self.distance)
+        # el
+        if(self.side == 'behind'):
+            print('behind', self.other_actor, self.distance)
         # elif(self.side == 'left'):
         #     print('left', self.other_actor, self.distance)
         # elif(self.side == 'right'):
