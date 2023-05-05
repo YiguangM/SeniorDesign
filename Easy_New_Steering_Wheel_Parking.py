@@ -99,11 +99,13 @@ import csv
 import re
 import random
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, PageBreak
 from reportlab.lib import colors
 import datetime
 import time
-
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import Paragraph
 
 if sys.version_info >= (3, 0):
 
@@ -157,6 +159,8 @@ try:
     import numpy as np
 except ImportError:
     raise RuntimeError('cannot import numpy, make sure numpy package is installed')
+
+from pygame import mixer
 
 
 # ==============================================================================
@@ -316,10 +320,10 @@ class World(object):
         self.obstacle_behind = SafetyDistance(self.player, self.hud,'behind')
         self.obstacle_left = SafetyDistance(self.player, self.hud,'left')
         self.obstacle_right = SafetyDistance(self.player, self.hud,'right')
-        self.obstacle_front_right_corner = SafetyDistance(self.player, self.hud,'front right corner')
-        self.obstacle_rear_right_corner = SafetyDistance(self.player, self.hud,'rear right corner')
-        self.obstacle_front_left_corner = SafetyDistance(self.player, self.hud,'front left corner')
-        self.obstacle_rear_left_corner = SafetyDistance(self.player, self.hud,'rear left corner')
+        # self.obstacle_front_right_corner = SafetyDistance(self.player, self.hud,'front right corner')
+        # self.obstacle_rear_right_corner = SafetyDistance(self.player, self.hud,'rear right corner')
+        # self.obstacle_front_left_corner = SafetyDistance(self.player, self.hud,'front left corner')
+        # self.obstacle_rear_left_corner = SafetyDistance(self.player, self.hud,'rear left corner')
         self.gnss_sensor = GnssSensor(self.player)
         self.imu_sensor = IMUSensor(self.player)
         self.camera_manager = CameraManager(self.player, self.hud, self._gamma,self.display_manager)
@@ -396,10 +400,11 @@ class World(object):
             self.obstacle_behind.sensor,
             self.obstacle_left.sensor,
             self.obstacle_right.sensor,
-            self.obstacle_front_right_corner,
-            self.obstacle_rear_right_corner,
-            self.obstacle_front_left_corner ,
-            self.obstacle_rear_left_corner]
+            # self.obstacle_front_right_corner,
+            # self.obstacle_rear_right_corner,
+            # self.obstacle_front_left_corner ,
+            # self.obstacle_rear_left_corner
+            ]
         for sensor in sensors:
             if sensor is not None:
                 sensor.stop()
@@ -1028,6 +1033,20 @@ class HUD(object):
         evaluations.instructortest(world.player, self)
         evaluations.sidewalk_detection(world.player,self)
 
+
+
+        if((t.location.x >186 and t.location.x <191) and(t.location.y >1 and t.location.y <9) ):
+            #print("i am here")
+            mixer.init()
+                # Loading the song
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\parkonright.mp3")
+                # Setting the volume
+            mixer.music.set_volume(0.7)
+                # Start playing the song
+            mixer.music.play()
+
+        # C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\
+
         self.last_time = int(self.simulation_time)
 
         self._info_text = [
@@ -1220,7 +1239,7 @@ class Evaluations(object):
     collision_fail = False
     instructor_fail = False
     time_fail = False
-    speedTest = False
+    speed_fail = False
     result = 'pass'
     start_time  = datetime.datetime.now().replace(microsecond=0)
     last_time = None
@@ -1242,15 +1261,34 @@ class Evaluations(object):
         self.number_of_speed_exceeded = 0
         self.number_of_col = 0
         self.number_of_blinkers_missed = 0
+        self.number_of_wrong_blinkers = 0
         self.number_of_inst_violation = 0
         self.number_of_sidewalk_hit = 0
+        self.num_of_duration_exceeded=0
+        #----------------------------------
+        self.over_speeding_advice = "No Comment Here"
+        self.blinkers_advice = "No Comment Here"
+        self.timelimit_advice = "No Comment Here"
+        self.collision_advice = "No Comment Here"
+        self.instviolation_advice = "No Comment Here"
+        self.sidewalk_advice = "No Comment Here"
+        self.wrong_blinkers_advice = "No Comment Here"
+
+
+        #----------------------------------
+        self.speed_flag = False
     
     def speedTest(self, car, hud):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
-        if (speed > 20):
+        if (speed > 30):
+            self.speed_fail = True
             hud.notification('Slow Down!')
-            self.number_of_speed_exceeded += 1
+            if (self.speed_flag == False):
+                self.number_of_speed_exceeded += 1
+                self.speed_flag = True
+        else:
+            self.speed_flag = False
 
             # print('Over Speed!')
 
@@ -1277,8 +1315,7 @@ class Evaluations(object):
             self.number_of_col=self.number_of_col+1
         self.last_time = time_current
 
-        if(self.number_of_col >=3):
-            self.collision_fail =True
+        self.collision_fail =True
         
     def check_blinker_parking(self,car,event):
         # print("INSIDE Blinker")
@@ -1290,14 +1327,15 @@ class Evaluations(object):
             if light_state in self.left_light_states: #invading line with left blinker
                 print('Invade with LB')
                 self.wrong_blinker_fail= True
-                self.number_of_blinkers_missed =+ 1
+                self.number_of_wrong_blinkers =+ 1
                 return False
 
             elif light_state in self.right_light_states: #invading line with right blinker
                 print('Invade lane RB')
+                self.wrong_blinker_fail= False
                 return True
             
-            else:                        #invading line with no blinker
+            else: #invading line with no blinker
                 print('Invade lane NB')
                 self.no_blinker__fail = True
                 self.number_of_blinkers_missed =+ 1
@@ -1314,20 +1352,21 @@ class Evaluations(object):
         v = car.get_velocity()
         speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),2)
         t = car.get_transform()
-        if (t.location.x >184 and t.location.x <191) and (t.location.y >40 and t.location.y <72):
+        if (t.location.x >185 and t.location.x <210) and (t.location.y >40 and t.location.y <72):
             self.instructor_fail = True #flags if the the driver goes beyond the designated parking instruction
             print("Instruction violated")
             hud.notification('Instruction violated')
             self.number_of_inst_violation += 1
-            # self.generateReport()
+            self.generateReport()
             # time.sleep(7)
-            # pygame.quit()
+            pygame.quit()
     
     def time_fail(self, duration):
         
-        if (duration > 300):
+        if (duration > 300): #300
             print("time exceeded of 5 minutes")
             self.time_fail = True
+            self.num_of_duration_exceeded = 1
         
 
     def generateReport(self):
@@ -1348,7 +1387,8 @@ class Evaluations(object):
         immediate_fail = 'No'
 
         #################################### fail-variables#################################
-        blinker_test = "No (0)"
+        blinker_test = "No"
+        wrong_blinker_test = "No"
         instructions_test = "No"
         Overspeeding_test= "No"
         collisons_test = "No"
@@ -1358,48 +1398,75 @@ class Evaluations(object):
 
         if(self.no_blinker__fail == True):
             blinker_test = "yes"
-            
+            if (blinker_test == "yes"):
+                self.blinkers_advice = "Based on your driving data, it appears \n that you could benefit from using your \n blinkers more often. Using your blinkers\n can help other drivers anticipate your \nmovements and improve overall safety on the\n road. We recommend getting into the habit of \nusing your blinkers well in advance of making \nany turns or changing lanes. Remember, proper \nuse of blinkers is not only important for \nyour own safety, but also for the safety \nof others around you."
+            else:
+                self.blinkers_advice = "No Comment Here"
             self.no_blinker__fail = False
 
-        if(self.wrong_blinker_fail == True): #why it failed
-            blinker_test = "yes"
-        
+        if(self.wrong_blinker_fail == True): 
+            wrong_blinker_test = "yes"
+            if (wrong_blinker_test == "yes"):
+                self.wrong_blinkers_advice = "Based on your driving data, it appears\n that you may have used the wrong blinkers\n while making turns or changing lanes. We \nrecommend reviewing the rules of the road and \npracticing using the appropriate blinkers to \nensure that you're signaling your intentions \ncorrectly. "
+            else:
+                self.wrong_blinkers_advice = "No Comment Here"
             self.wrong_blinker_fail = False
 
-        if(self.speedTest == True):
+        if(self.speed_fail == True): #done
             Overspeeding_test = "yes"
-            
-            self.speedTest = False
+            if (Overspeeding_test == "yes"):
+                self.over_speeding_advice = "Based on your driving data, we recommend \n maintaining a speed of under 30 km/hr to\n improve your safety on the road. To achieve this, \n keep an eye on your speedometer and adjust \nyour speed accordingly. Remember, in real life, \ndriving slower can also help you save fuel,\n reduce wear and tear on your vehicle, \nand decrease emissions!"
+            else:
+                Overspeeding_test = "No Comment Here"
+            self.speed_fail = False
 
-        if(self.instructor_fail == True):
+        if(self.instructor_fail == True):#done
             instructions_test = "yes"
+            if (instructions_test == "yes"):
+                self.instviolation_advice = "Based on your driving data, it appears \n that you may have violated some instructions\n given by your driving instructor. We recommend \ncarefully reviewing the instructions you were \ngiven and practicing the appropriate driving\n techniques to ensure that you're following\n them correctly."
+            else:
+                self.instviolation_advice = "No Comment Here"
             immediate_fail = "yes"
-            
             self.instructor_fail = False
 
         if(self.collision_fail == True):
             collisons_test = "yes"
+            if (collisons_test == "yes"):
+                self.collision_advice = "To reduce the risk of collisions, keep \na safe distance from other vehicles, be aware\n of your surroundings, and anticipate other drivers'\nactions. Obey traffic signals and speed limits,\n avoid distractions, and  never drive under \nthe influence. Prioritize safety at all times\n while driving. "
+            else:
+                self.collision_advice = "No Comment Here"
             immediate_fail = "yes"
-            
             self.collision_fail = False
 
         if(self.time_fail == True):
             time_test = "yes"
+            if (time_test == "yes"):
+                self.timelimit_advice = "When parallel parking, aim to complete the \nmaneuver within 5 minutes to avoid blocking \ntraffic. If you're having difficulty, find another\n spot or come back later. Remember \nto prioritize safety and be considerate of\n other drivers. "
+            else:
+                self.timelimit_advice = "No Comment Here"
             immediate_fail = "yes"
-            
             self.time_fail = False
 
         if(self.sidewalk_fail == True):
             sidewalk_test = "yes"
+
+            if (sidewalk_test == "yes"):
+                self.sidewalk_advice = "Based on your driving data, it appears \nthat you may have gone over a sidewalk \nwhile driving. We recommend being more mindful of\n your vehicle's position on the road \nand avoiding any maneuvers that may\n cause you to leave the roadway."
+            else:
+                self.sidewalk_advice = "No Comment Here"
             immediate_fail = "yes"
-            
             self.sidewalk_fail = False
 
         #----------------------------------
         if (immediate_fail == 'yes'):
             self.result = 'Failed'
         
-        num_faults = num_faults + self.number_of_col + self.number_of_speed_exceeded + self.number_of_inst_violation + self.number_of_sidewalk_hit
+        num_faults = num_faults + self.number_of_col + self.number_of_speed_exceeded + self.number_of_inst_violation + self.number_of_sidewalk_hit+self.number_of_blinkers_missed+self.num_of_duration_exceeded + self.number_of_wrong_blinkers
+
+        if(num_faults >= 4):
+            self.result = 'Failed'
+
+#-----------------------------------------------------------------------------------------
 
         data = [['Evaluation Table'],
                 ['Today\'s Date:', today],
@@ -1411,7 +1478,7 @@ class Evaluations(object):
                 ['Immediate Fail:', immediate_fail]]
 
         # Create the table and apply style
-        table = Table(data, colWidths=[120, 220])
+        table = Table(data, colWidths=[340, 220])
         table.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
                                 ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
                                 ('TEXTCOLOR', (0,0), (-1,0), colors.black),
@@ -1424,9 +1491,7 @@ class Evaluations(object):
                                 ('SPAN', (0,0), (1,0))]))
 
         # Define other data for the table 1
-
-
-        #---------------------------
+#-----------------------------------------------------------------------------------------
         #--make variables for this--
         #---------------------------
 
@@ -1438,7 +1503,7 @@ class Evaluations(object):
                 ]
 
         # Create the table and apply style
-        table2 = Table(data2, colWidths=[120, 220])
+        table2 = Table(data2, colWidths=[340, 220])
         table2.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
                                 ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
                                 ('TEXTCOLOR', (0,0), (-1,0), colors.black),
@@ -1453,17 +1518,16 @@ class Evaluations(object):
         # Define other data for the table 3
         #---------------------------
         #--make variables for this--
-        #---------------------------
+#-----------------------------------------------------------------------------------------
 
-       
-
-        data3 = [['Number of Faults'],
-                ['1) Over Speeding', Overspeeding_test ,self.number_of_speed_exceeded],
-                ['2) Not using blinkers', blinker_test, self.number_of_blinkers_missed,
-                ['3) Time Exceeded', time_test ,duration ],
-                ['4) Number of Collisions', collisons_test , self.number_of_col ],
-                ['5) Not Following Instructions', instructions_test ,self.number_of_inst_violation ],
-                ['6) Sidewalk Hit(s)', sidewalk_test , self.number_of_sidewalk_hit ]]]
+        data3 = [['Faults','', 'Number of Faults'],
+                ['1) Over Speeding', Overspeeding_test, self.number_of_speed_exceeded],
+                ['2) Not using blinkers', blinker_test, self.number_of_blinkers_missed],
+                ['3) Using Wrong blinkers', wrong_blinker_test, self.number_of_wrong_blinkers],
+                ['4) Time Exceeded', time_test, duration ],
+                ['5) Number of Collisions', collisons_test , self.number_of_col ],
+                ['6) Following Instructions', instructions_test ,self.number_of_inst_violation],
+                ['7) Sidewalk Hit(s)', sidewalk_test , self.number_of_sidewalk_hit]]
 
         # Create the table and apply style
         table3 = Table(data3, colWidths=[120, 220])
@@ -1476,13 +1540,41 @@ class Evaluations(object):
                                 ('FONTSIZE', (0,0), (-1,0), 12),
                                 ('BOTTOMPADDING', (0,0), (-1,0), 12),
                                 ('GRID', (0,0), (-1,-1), 1, colors.black), 
-                                ('SPAN', (0,0), (1,0))]))
+                                ('SPAN', (0,0), (1,0))
+                                
+                                ]))
 
         # Define other data for the table 1
         #---------------------------
         #--make variables for this--
-        #---------------------------
-        data4 = [['Result', self.result]]
+#-----------------------------------------------------------------------------------------
+
+        data5 = [['Result', self.result]]
+
+        # Create the table and apply style
+        table5 = Table(data5, colWidths=[340, 220])
+        table5.setStyle(TableStyle([('BACKGROUND', (0,0), (0,-1), colors.lightgrey),
+                                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                                ('TEXTCOLOR', (0,0), (-1,0), colors.black),
+                                ('TEXTCOLOR', (0,1), (-1,-1), colors.black),
+                                ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+                                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                                ('FONTSIZE', (0,0), (-1,0), 12),
+                                ('BOTTOMPADDING', (0,0), (-1,0), 12),
+                                ('GRID', (0,0), (-1,-1), 1, colors.black)]
+                                ))
+        
+#-----------------------------------------------------------------------------------------
+
+        data4 = [['Feedback Summary'],
+                ['Faults', "Yes/No", 'Advice Given'],
+                ['1) Over Speeding', Overspeeding_test , self.over_speeding_advice],
+                ['2) Not using blinkers', blinker_test, self.blinkers_advice],
+                ['3) Using Wrong blinkers', wrong_blinker_test, self.wrong_blinkers_advice],
+                ['3) Time Exceeded', time_test , self.timelimit_advice ],
+                ['4) Number of Collisions', collisons_test , self.collision_advice ],
+                ['5) Following Instructions', instructions_test , self.instviolation_advice ],
+                ['6) Sidewalk Hit(s)', sidewalk_test , self.sidewalk_advice]]
 
         # Create the table and apply style
         table4 = Table(data4, colWidths=[120, 220])
@@ -1494,12 +1586,15 @@ class Evaluations(object):
                                 ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
                                 ('FONTSIZE', (0,0), (-1,0), 12),
                                 ('BOTTOMPADDING', (0,0), (-1,0), 12),
-                                ('GRID', (0,0), (-1,-1), 1, colors.black)]
-                                ))
+                                ('GRID', (0,0), (-1,-1), 1, colors.black), 
+                                ('SPAN', (0,0), (-1,0)),
+                                ('VALIGN', (0,0), (-1,-1), 'MIDDLE')
+                                
+                                ]))
 
         # Create the PDF document and add the table
         doc = SimpleDocTemplate("Parking_Evaluation.pdf", pagesize=letter)
-        doc.build([table, table2, table3, table4])
+        doc.build([table, table2, table3, PageBreak(), table4, table5])
 
         print('PDF report generated successfully!')
                
@@ -1551,6 +1646,8 @@ class SafetyDistance(object):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=bound_x, y=0, z=bound_z),carla.Rotation(0,0,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
             bp.set_attribute('hit_radius', '0.5')
+
+
         elif(side == 'front right corner'):
             self.sensor = world.spawn_actor(bp, carla.Transform(carla.Location(x=bound_x, y=bound_y, z=bound_z),carla.Rotation(0,45,0)), attach_to=self._parent)
             bp.set_attribute('distance','10')
