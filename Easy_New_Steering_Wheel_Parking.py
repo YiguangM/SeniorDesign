@@ -1034,7 +1034,8 @@ class HUD(object):
         evaluations.sidewalk_detection(world.player,self)
 
 
-
+        
+        ################################################# Audio for parking ########################################
         if((t.location.x >186 and t.location.x <191) and(t.location.y >1 and t.location.y <9) ):
             #print("i am here")
             mixer.init()
@@ -1047,6 +1048,8 @@ class HUD(object):
 
         # C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\
 
+        # speed = round(3.6 * math.sqrt(v.x**2 + v.y**2 + v.z**2),3)
+        # self.notification( str(speed))
         self.last_time = int(self.simulation_time)
 
         self._info_text = [
@@ -1124,7 +1127,7 @@ class HUD(object):
                 elif isinstance(item, tuple):
                     if isinstance(item[1], bool):
                         rect = pygame.Rect((bar_h_offset, v_offset + 8), (6, 6))
-                        pygame.draw.rect(display, (255, 255, 255), rect, 0 if item[1] else 1)
+                        pygame.draw.rect(display, (255, 255, 255), rect, 0 if item[1] else 1) ## checkboxes for the reverse, handbreak and manual.
                     else:
                         rect_border = pygame.Rect((bar_h_offset, v_offset + 8), (bar_width, 6))
                         pygame.draw.rect(display, (255, 255, 255), rect_border, 1)
@@ -1593,7 +1596,7 @@ class Evaluations(object):
                                 ]))
 
         # Create the PDF document and add the table
-        doc = SimpleDocTemplate("Parking_Evaluation.pdf", pagesize=letter)
+        doc = SimpleDocTemplate(r"C:\Users\b00083281\Desktop\Reports\Parking_Evaluation.pdf", pagesize=letter)
         doc.build([table, table2, table3, PageBreak(), table4, table5])
 
         print('PDF report generated successfully!')
@@ -1692,7 +1695,7 @@ class SafetyDistance(object):
 
         #print('Speed: ',speed)
         if (speed != 0):
-            if(distance < 2.0):
+            if(distance < 1.0):
                 if(self.side == 'front'):
                     self.hud.notification('You are too close to the object in front of you')
                 elif(self.side == 'behind'):
@@ -2610,8 +2613,8 @@ def main():
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
-        default='1920x1080', #5770x1080
-        help='window resolution (default: 1920x1080)')
+        default='5770x1080', #5770x1080
+        help='window resolution (default: 5770x1080)')
     argparser.add_argument(
         '--filter',
         metavar='PATTERN',
