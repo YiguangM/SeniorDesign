@@ -920,28 +920,68 @@ class HUD(object):
 
         
  ################################################### Checking for lane change condition, for town 3 #####################################################
+        #1 Take third exita
 
-        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75)):
-            change_lane_check(t.location.x,t.location.y, 'cl')
+        if ((t.location.x > 1 and t.location.x < 12) and (t.location.y > -97 and t.location.y < -90)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_Right.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
         
-        #take third exit
-        if((t.location.x > -52 and t.location.x<-42) and (t.location.y >4 and t.location.y <-1)):
-            change_lane_check(t.location.x,t.location.y ,'tte')
+        if ((t.location.x > 50 and t.location.x < 55) and (t.location.y > -145 and t.location.y < -124)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Straight.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
 
-        #take left
-        if((t.location.x > 3 and t.location.x<13) and (t.location.y >-134 and t.location.y <-127) or (t.location.x > 120 and t.location.x<126) and (t.location.y >-133 and t.location.y <-127)):
-            change_lane_check(t.location.x,t.location.y, 'l')
-
-        #take keep going straight
-        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75) or (t.location.x > 228 and t.location.x<237) and (t.location.y >-33 and t.location.y <-40) or (t.location.x >200 and t.location.x<208) and (t.location.y >52 and t.location.y < 60)):
-            change_lane_check(t.location.x,t.location.y, 's')
+        if ((t.location.x > 122 and t.location.x < 123) and (t.location.y > -143 and t.location.y < -123)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_left.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
         
-        #take right
-        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75) or (t.location.x > 152 and t.location.x<160) and (t.location.y >-163 and t.location.y <-158) or (t.location.x > 226 and t.location.x<239) and (t.location.y >21 and t.location.y <27) or (t.location.x > 120 and t.location.x<130) and (t.location.y >60 and t.location.y <70)):
-            change_lane_check(t.location.x,t.location.y, 'r')
-    
-        if((t.location.x >67 and t.location.x <74) and(t.location.y > 124 and t.location.y <135)):
-            change_lane_check(t.location.x,t.location.y, 'pr')
+        if ((t.location.x > 142 and t.location.x < 160) and (t.location.y > -170 and t.location.y < -160)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_Right.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+        
+        if ((t.location.x > 227 and t.location.x < 238) and (t.location.y > -50 and t.location.y < -40)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Straight.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+
+        if ((t.location.x > 227 and t.location.x < 238) and (t.location.y > 15 and t.location.y < 20)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_Right.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+
+        if ((t.location.x > 200 and t.location.x < 210) and (t.location.y > 50 and t.location.y < 70)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Straight.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+
+        if ((t.location.x > 120 and t.location.x < 130) and (t.location.y > 50 and t.location.y < 70)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\takeaUturn.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+        
+        if ((t.location.x > 120 and t.location.x < 130) and (t.location.y > 60 and t.location.y < 70)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_Right.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
+
+
+        if ((t.location.x > 60 and t.location.x < 69) and (t.location.y > 120 and t.location.y < 140)):
+            mixer.init()    
+            mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\parkonright.mp3")  # Loading the song    
+            mixer.music.set_volume(0.7)  # Setting the volume     
+            mixer.music.play() # Start playing the song
 
 ##########################################################Checking for lane change condition, for town 5################################################
         if((t.location.x > 30 and t.location.x<40) and (t.location.y >49 and t.location.y <62)):
