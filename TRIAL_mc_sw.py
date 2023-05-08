@@ -623,6 +623,7 @@ class DualControl(object):
                     self._lights = current_lights
                     world.player.set_light_state(carla.VehicleLightState(self._lights))
                 self._control.reverse = self._control.gear < 0
+                self._control.hand_brake = self._control.gear == 0
             elif isinstance(self._control, carla.WalkerControl):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time())
             world.player.apply_control(self._control)
@@ -881,24 +882,66 @@ class HUD(object):
 
 
 #################################################### Change Lane check function    ###########################################################
-        def change_lane_check(pos_x,pos_y):
+        def change_lane_check(pos_x,pos_y, id):
             distance_y = 90
             if abs(pos_y)-distance_y <=6: #check if its less than 6 distance
-                mixer.init()    
-                mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\lane_change.mp3")  # Loading the song    
-                mixer.music.set_volume(0.7)  # Setting the volume     
-                mixer.music.play() # Start playing the song
-                #print("hello, change lane")
+                if (id =='cl'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\lane_change.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
+                    #print("hello, change lane")
+                elif (id == 'tte'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\take_te.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
+                elif (id == 'l'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_left.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
+                elif (id == 's'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Straight.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
+                elif (id == 'r'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\Turn_Right.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
+                elif (id == 'pr'):
+                    mixer.init()    
+                    mixer.music.load(r"C:\Users\b00083281\Desktop\PythonAPI\scenario_runner-0.9.13\srunner\scenariomanager\scenarioatomics\Audio_Files\park_on_right.mp3")  # Loading the song    
+                    mixer.music.set_volume(0.7)  # Setting the volume     
+                    mixer.music.play() # Start playing the song
 
 
         
  ################################################### Checking for lane change condition, for town 3 #####################################################
 
         if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75)):
-            change_lane_check(t.location.x,t.location.y)
-            # if instruction_test() == False:
-            #     fail_instructor = True
+            change_lane_check(t.location.x,t.location.y, 'cl')
+        
+        #take third exit
+        if((t.location.x > -52 and t.location.x<-42) and (t.location.y >4 and t.location.y <-1)):
+            change_lane_check(t.location.x,t.location.y ,'tte')
 
+        #take left
+        if((t.location.x > 3 and t.location.x<13) and (t.location.y >-134 and t.location.y <-127) or (t.location.x > 120 and t.location.x<126) and (t.location.y >-133 and t.location.y <-127)):
+            change_lane_check(t.location.x,t.location.y, 'l')
+
+        #take keep going straight
+        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75) or (t.location.x > 228 and t.location.x<237) and (t.location.y >-33 and t.location.y <-40) or (t.location.x >200 and t.location.x<208) and (t.location.y >52 and t.location.y < 60)):
+            change_lane_check(t.location.x,t.location.y, 's')
+        
+        #take right
+        if((t.location.x > -90 and t.location.x<-85) and (t.location.y >-100 and t.location.y <-75) or (t.location.x > 152 and t.location.x<160) and (t.location.y >-163 and t.location.y <-158) or (t.location.x > 226 and t.location.x<239) and (t.location.y >21 and t.location.y <27) or (t.location.x > 120 and t.location.x<130) and (t.location.y >60 and t.location.y <70)):
+            change_lane_check(t.location.x,t.location.y, 'r')
+    
+        if((t.location.x >67 and t.location.x <74) and(t.location.y > 124 and t.location.y <135)):
+            change_lane_check(t.location.x,t.location.y, 'pr')
 
 ##########################################################Checking for lane change condition, for town 5################################################
         if((t.location.x > 30 and t.location.x<40) and (t.location.y >49 and t.location.y <62)):
@@ -1727,24 +1770,7 @@ class CameraManager(object):
 
         self.transform_index = 1
         self.sensors = [['sensor.camera.rgb', cc.Raw, 'Camera RGB']]
-        # self.sensors = [
-        #     ['sensor.camera.rgb', cc.Raw, 'Camera RGB',{}]
-        #     ['sensor.camera.depth', cc.Raw, 'Camera Depth (Raw)', {}],
-        #         ['sensor.camera.depth', cc.Depth, 'Camera Depth (Gray Scale)', {}],
-        #         ['sensor.camera.depth', cc.LogarithmicDepth, 'Camera Depth (Logarithmic Gray Scale)', {}],
-        #         ['sensor.camera.semantic_segmentation', cc.Raw, 'Camera Semantic Segmentation (Raw)', {}],
-        #         ['sensor.camera.semantic_segmentation', cc.CityScapesPalette, 'Camera Semantic Segmentation (CityScapes Palette)', {}],
-        #         ['sensor.camera.instance_segmentation', cc.CityScapesPalette, 'Camera Instance Segmentation (CityScapes Palette)', {}],
-        #         ['sensor.camera.instance_segmentation', cc.Raw, 'Camera Instance Segmentation (Raw)', {}],
-        #         ['sensor.lidar.ray_cast', None, 'Lidar (Ray-Cast)', {'range': '50'}],
-        #         ['sensor.camera.dvs', cc.Raw, 'Dynamic Vision Sensor', {}],
-        #         ['sensor.camera.rgb', cc.Raw, 'Camera RGB Distorted',
-        #             {'lens_circle_multiplier': '3.0',
-        #             'lens_circle_falloff': '3.0',
-        #             'chromatic_aberration_intensity': '0.5',
-        #             'chromatic_aberration_offset': '0'}],
-        #         ['sensor.camera.optical_flow', cc.Raw, 'Optical Flow', {}],
-        # ]
+
         world = self._parent.get_world()
         bp_library = world.get_blueprint_library()
         for item in self.sensors:
@@ -1754,31 +1780,13 @@ class CameraManager(object):
             bp.set_attribute('gamma', '2.2')
             item.append(bp)
         self.index = None
-        # bp_library = world.get_blueprint_library()
-        # for item in self.sensors:
-        #     bp = bp_library.find(item[0])
-        #     if item[0].startswith('sensor.camera'):
-        #        bp.set_attribute('image_size_x', str(hud.dim[0]))
-        #        bp.set_attribute('image_size_y', str(hud.dim[1]))
-        #        if bp.has_attribute('gamma'):
-        #            bp.set_attribute('gamma', str(gamma_correction))
-        #        for attr_name, attr_value in item[3].items():
-        #            bp.set_attribute(attr_name, attr_value)
-        #     elif item[0].startswith('sensor.lidar'):
-        #          self.lidar_range = 50
-        #          for attr_name, attr_value in item[3].items():
-        #              bp.set_attribute(attr_name, attr_value)
-        #              if attr_name == 'range':
-        #                 self.lidar_range = float(attr_value)
 
-        #     item.append(bp)
-        # self.index = None
 
-        SensorManager(world, self.display_man, 'RGBCamera',self.hud, self._camera_transforms[0][0],#carla.Transform(carla.Location(x=lx, y=ly, z=lz), carla.Rotation(pitch=mp.left_pitch, yaw=mp.left_yaw)), 
+        SensorManager(world, self.display_man, 'RGBCamera',self.hud, self._camera_transforms[0][0],
                        self._parent, {}, display_pos=[0, 0] )
         SensorManager(world, self.display_man, 'RGBCamera',self.hud ,  carla.Transform(carla.Location(x=-0.1,y=-0.4, z=1.2), carla.Rotation(yaw=+00)), 
                         self._parent, {}, display_pos=[0, 1] )
-        SensorManager(world, self.display_man, 'RGBCamera',self.hud , self._camera_transforms[1][0],#carla.Transform(carla.Location(x=rx, y=ry, z=rz), carla.Rotation(pitch=mp.right_pitch,yaw=mp.right_yaw)), 
+        SensorManager(world, self.display_man, 'RGBCamera',self.hud , self._camera_transforms[1][0],
                          self._parent, {}, display_pos=[0, 2] )
 
     def toggle_camera(self):
@@ -1798,8 +1806,6 @@ class CameraManager(object):
                 self._camera_transforms[self.transform_index][0],
                 attach_to=self._parent,
                 attachment_type=self._camera_transforms[self.transform_index][1])
-            # We need to pass the lambda a weak reference to self to avoid
-            # circular reference.
             weak_self = weakref.ref(self)
             self.sensor.listen(lambda image: CameraManager._parse_image(weak_self, image))
         if notify:
@@ -1836,8 +1842,6 @@ class CameraManager(object):
             lidar_img[tuple(lidar_data.T)] = (255, 255, 255)
             self.surface = pygame.surfarray.make_surface(lidar_img)
         elif self.sensors[self.index][0].startswith('sensor.camera.dvs'):
-            # Example of converting the raw_data from a carla.DVSEventArray
-            # sensor into a NumPy array and using it as an image
             dvs_events = np.frombuffer(image.raw_data, dtype=np.dtype([
                 ('x', np.uint16), ('y', np.uint16), ('t', np.int64), ('pol', np.bool)]))
             dvs_img = np.zeros((image.height, image.width, 3), dtype=np.uint8)
@@ -1964,7 +1968,7 @@ class SensorManager:
         lidar_data = np.array(points[:, :2])
         lidar_data *= min(disp_size) / lidar_range
         lidar_data += (0.5 * disp_size[0], 0.5 * disp_size[1])
-        lidar_data = np.fabs(lidar_data)  # pylint: disable=E1111
+        lidar_data = np.fabs(lidar_data)  
         lidar_data = lidar_data.astype(np.int32)
         lidar_data = np.reshape(lidar_data, (-1, 2))
         lidar_img_size = (disp_size[0], disp_size[1], 3)
@@ -1990,7 +1994,7 @@ class SensorManager:
         lidar_data = np.array(points[:, :2])
         lidar_data *= min(disp_size) / lidar_range
         lidar_data += (0.5 * disp_size[0], 0.5 * disp_size[1])
-        lidar_data = np.fabs(lidar_data)  # pylint: disable=E1111
+        lidar_data = np.fabs(lidar_data)  
         lidar_data = lidar_data.astype(np.int32)
         lidar_data = np.reshape(lidar_data, (-1, 2))
         lidar_img_size = (disp_size[0], disp_size[1], 3)
@@ -2103,15 +2107,13 @@ def game_loop(args):
 
         hud = HUD(args.width, args.height)
         world = World(sim_world, hud, args,display_manager)
-       # controller = KeyboardControl(world, args.autopilot)
-
-
+    
 
 
         ###############################for steering wheel################################
-        #controller = DualControl(world, args.autopilot)
+        controller = DualControl(world, args.autopilot)
 
-        controller = KeyboardControl(world,args.autopilot)
+        #controller = KeyboardControl(world,args.autopilot)
 
 
         sim_world.wait_for_tick()
@@ -2119,8 +2121,8 @@ def game_loop(args):
         clock = pygame.time.Clock()
         while True:
             clock.tick_busy_loop(60)
-            if controller.parse_events(client, world, clock): #for keyboard
-            #if controller.parse_events(world, clock)
+            #if controller.parse_events(client, world, clock): #for keyboard
+            if controller.parse_events(world, clock):
                 return
             if not world.tick(clock):
                 return
